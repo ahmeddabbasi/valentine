@@ -69,14 +69,22 @@
       document
         .getElementById("continueActivities")
         .addEventListener("click", function () {
+          console.log("[STEP 1] Continue button clicked");
+          
           var selectedActivities = MoonshineSelections.getCheckedValues("activities");
+          console.log("[STEP 2] Selected activities:", selectedActivities);
+          
           if (!selectedActivities.length) {
+            console.warn("[VALIDATION] No activities selected, blocking");
             alert("Please pick at least one activity before continuing.");
             return;
           }
+          
           var sessionId = MoonshineSelections.getOrCreateSessionId(
             "moonshine.sessionId"
           );
+          console.log("[STEP 3] Session ID:", sessionId);
+          
           MoonshineSelections.saveJson(
             "moonshine.activities",
             selectedActivities
@@ -95,41 +103,78 @@
             dessert: MoonshineSelections.loadJson("moonshine.dessert", []),
             activities: MoonshineSelections.loadJson("moonshine.activities", []),
           };
+          
+          console.log("[STEP 4] Full payload to submit:", payload);
 
           function submitSelections(data) {
             var json = JSON.stringify(data);
+            console.log("[STEP 5] JSON payload:", json);
 
             try {
               if (navigator.sendBeacon) {
+                console.log("[STEP 6] Using sendBeacon (no response body available)");
                 var blob = new Blob([json], { type: "application/json" });
                 var queued = navigator.sendBeacon("/api/submit", blob);
-                if (queued) return Promise.resolve("beacon");
+                if (queued) {
+                  console.log("[STEP 7] sendBeacon accepted, queued for delivery");
+                  return Promise.resolve("beacon");
+                }
+                console.warn("[STEP 7] sendBeacon rejected, falling back to fetch");
               }
             } catch (_err) {
-              // fall back to fetch
+              console.error("[ERROR] sendBeacon threw:", _err);
             }
 
+            console.log("[STEP 8] Using fetch API");
             return fetch("/api/submit", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: json,
               keepalive: true,
-            }).then(function () {
-              return "fetch";
+            }).then(function (response) {
+              console.log("[STEP 9] Fetch response status:", response.status, response.ok);
+              return response.text().then(function (text) {
+                console.log("[STEP 10] Response body:", text);
+                var parsed = null;
+                try {
+                  parsed = text ? JSON.parse(text) : null;
+                  console.log("[STEP 11] Parsed JSON:", parsed);
+                } catch (parseErr) {
+                  console.error("[ERROR] Failed to parse response:", parseErr);
+                  parsed = { raw: text };
+                }
+                
+                if (!response.ok) {
+                  console.error("[ERROR] Server returned non-OK status:", response.status, parsed);
+                  var errorMsg = (parsed && (parsed.detail || parsed.error)) || "Server error";
+                  alert("❌ Submission failed: " + errorMsg + "\n\nCheck console for details.");
+                  throw new Error(errorMsg);
+                }
+                
+                console.log("[SUCCESS] Submission completed successfully");
+                return "fetch";
+              });
+            }).catch(function (fetchErr) {
+              console.error("[ERROR] Fetch failed:", fetchErr);
+              throw fetchErr;
             });
           }
 
+          console.log("[STEP 12] Starting submission...");
           Promise.race([
             submitSelections(payload).catch(function (err) {
-              try {
-                console.warn("Failed to submit selections", err);
-              } catch (_e) {}
+              console.error("[ERROR] Submit promise rejected:", err);
+              alert("❌ Failed to submit: " + (err && err.message ? err.message : String(err)));
               return null;
             }),
             new Promise(function (resolve) {
-              setTimeout(resolve, 1200);
+              setTimeout(function() {
+                console.log("[TIMEOUT] 1200ms timeout reached, redirecting...");
+                resolve();
+              }, 1200);
             }),
           ]).finally(function () {
+            console.log("[STEP 13] Redirecting to lastpage.html");
             window.location.href = "lastpage.html";
           });
         });
