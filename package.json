@@ -7,7 +7,7 @@
     "build": "node -e \"console.log('No build step (static HTML)')\""
   },
   "engines": {
-    "node": ">=18"
+    "node": "18.x"
   },
   "dependencies": {}
 }
