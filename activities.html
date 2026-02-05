@@ -10,16 +10,6 @@
     <div id="activityquestion"><b>What are we doing after?</b></div>
     <div class="activities-selection">
       <div class="activity-item">
-        <img src="activities/aquarium.jpeg" alt="aquarium" />
-        <label
-          ><input
-            type="checkbox"
-            name="activities"
-            value="aquarium"
-          />aquarium</label
-        >
-      </div>
-      <div class="activity-item">
         <img src="activities/arcade.jpeg" alt="arcade" />
         <label
           ><input
@@ -70,8 +60,79 @@
         >
       </div>
     </div>
-    <button class="button" onclick="location.href='lastpage.html'">
-      Last page ... 
+    <button class="button" id="continueActivities" type="button">
+      nexxtttt :) ... 
     </button>
+
+    <script src="js/selections.js"></script>
+    <script>
+      document
+        .getElementById("continueActivities")
+        .addEventListener("click", function () {
+          var selectedActivities = MoonshineSelections.getCheckedValues("activities");
+          if (!selectedActivities.length) {
+            alert("Please pick at least one activity before continuing.");
+            return;
+          }
+          var sessionId = MoonshineSelections.getOrCreateSessionId(
+            "moonshine.sessionId"
+          );
+          MoonshineSelections.saveJson(
+            "moonshine.activities",
+            selectedActivities
+          );
+
+          var payload = {
+            sessionId: sessionId,
+            date: (function () {
+              try {
+                return localStorage.getItem("moonshine.date") || "";
+              } catch (_err) {
+                return "";
+              }
+            })(),
+            food: MoonshineSelections.loadJson("moonshine.food", []),
+            dessert: MoonshineSelections.loadJson("moonshine.dessert", []),
+            activities: MoonshineSelections.loadJson("moonshine.activities", []),
+          };
+
+          function submitSelections(data) {
+            var json = JSON.stringify(data);
+
+            try {
+              if (navigator.sendBeacon) {
+                var blob = new Blob([json], { type: "application/json" });
+                var queued = navigator.sendBeacon("/api/submit", blob);
+                if (queued) return Promise.resolve("beacon");
+              }
+            } catch (_err) {
+              // fall back to fetch
+            }
+
+            return fetch("/api/submit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: json,
+              keepalive: true,
+            }).then(function () {
+              return "fetch";
+            });
+          }
+
+          Promise.race([
+            submitSelections(payload).catch(function (err) {
+              try {
+                console.warn("Failed to submit selections", err);
+              } catch (_e) {}
+              return null;
+            }),
+            new Promise(function (resolve) {
+              setTimeout(resolve, 1200);
+            }),
+          ]).finally(function () {
+            window.location.href = "lastpage.html";
+          });
+        });
+    </script>
   </body>
 </html>

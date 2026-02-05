@@ -11,11 +11,26 @@
     <form class="form-group">
       <label>Which day: (select a date cuite.. )</label>
       <div>
-        <input type="date" />
+        <input type="date" id="dateInput" name="date" required />
         <button class="button" type="submit" formaction="food.html">
           Submit
         </button>
       </div>
     </form>
+
+    <script src="js/selections.js"></script>
+    <script>
+      document
+        .querySelector("form.form-group")
+        .addEventListener("submit", function (event) {
+          var dateInput = document.getElementById("dateInput");
+          if (!dateInput || !dateInput.value) {
+            event.preventDefault();
+            alert("Please select a date before continuing.");
+            return;
+          }
+          MoonshineSelections.saveDateValue("#dateInput", "moonshine.date");
+        });
+    </script>
   </body>
 </html>

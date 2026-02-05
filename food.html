@@ -24,12 +24,6 @@
         >
       </div>
       <div class="food-item">
-        <img src="food/dog.jpeg" alt="dog" />
-        <label
-          ><input type="checkbox" name="food" value="hotdog" /> hotdog</label
-        >
-      </div>
-      <div class="food-item">
         <img src="food/koreanfood.jpeg" alt="koreanfood" />
         <label
           ><input type="checkbox" name="food" value="Korean food" /> korean
@@ -57,8 +51,26 @@
         <label><input type="checkbox" name="food" value="sushi" /> sushi</label>
       </div>
     </div>
-    <button class="button" onclick="location.href='dessert.html'">
-      Continue Hihihhh... 
+    <button class="button" id="continueFood" type="button">
+      Continue ... 
     </button>
+
+    <script src="js/selections.js"></script>
+    <script>
+      document
+        .getElementById("continueFood")
+        .addEventListener("click", function () {
+          var selected = MoonshineSelections.getCheckedValues("food");
+          if (!selected.length) {
+            alert("Please pick at least one food option before continuing.");
+            return;
+          }
+          MoonshineSelections.saveJson(
+            "moonshine.food",
+            selected
+          );
+          window.location.href = "dessert.html";
+        });
+    </script>
   </body>
 </html>
